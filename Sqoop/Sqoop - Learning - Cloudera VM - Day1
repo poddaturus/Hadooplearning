@@ -1,0 +1,218 @@
+Command:
+sqoop list-databases --connect jdbc:mysql://localhost:3306 --username root --password cloudera
+
+Output:
+information_schema
+cm
+firehose
+hue
+metastore
+mysql
+nav
+navms
+oozie
+retail_db
+rman
+sentry
+
+**********************************************************************************************************************
+
+Command 2:
+sqoop list-tables --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera
+Output 2:
+categories
+customers
+departments
+order_items
+orders
+products
+
+
+**********************************************************************************************************************
+Command 3:
+sqoop eval --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --query "select count(1) from order_items"
+
+Output:
+
+------------------------
+| count(1)             | 
+------------------------
+| 172198               | 
+------------------------
+
+**********************************************************************************************************************
+Command 4: 
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table order_items --warehouse-dir /usr/cloudera/sqoop_import/retail_db
+
+
+hadoop fs -ls /usr/cloudera/sqoop_import/retail_db/order_items
+
+
+Output:
+
+-rw-r--r--   1 cloudera supergroup          0 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/_SUCCESS
+-rw-r--r--   1 cloudera supergroup    1303818 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00000
+-rw-r--r--   1 cloudera supergroup    1343222 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00001
+-rw-r--r--   1 cloudera supergroup    1371917 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00002
+-rw-r--r--   1 cloudera supergroup    1389923 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00003
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table order_items --warehouse-dir /usr/cloudera/sqoop_import/retail_db --num-mappers 1 --append
+
+Output:
+
+Found 6 items
+-rw-r--r--   1 cloudera supergroup          0 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/_SUCCESS
+-rw-r--r--   1 cloudera supergroup    1303818 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00000
+-rw-r--r--   1 cloudera supergroup    1343222 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00001
+-rw-r--r--   1 cloudera supergroup    1371917 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00002
+-rw-r--r--   1 cloudera supergroup    1389923 2018-08-09 03:04 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00003
+-rw-r--r--   1 cloudera cloudera      5408880 2018-08-09 03:35 /usr/cloudera/sqoop_import/retail_db/order_items/part-m-00004d
+
+**********************************************************************************************************************
+
+mysql -u root -h localhost -p
+
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| cm                 |
+| firehose           |
+| hue                |
+| metastore          |
+| mysql              |
+| nav                |
+| navms              |
+| oozie              |
+| retail_db          |
+| rman               |
+| sentry             |
++--------------------+
+12 rows in set (0.00 sec)
+
+mysql> use retail_db;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql> create table order_tables_nopk as select * from order_items;
+Query OK, 172198 rows affected (0.87 sec)
+Records: 172198  Duplicates: 0  Warnings: 0
+
+
+**********************************************************************************************************************
+
+Command for NoPK tables
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table order_items_nopk --warehouse-dir /usr/cloudera/sqoop_import/retail_db
+
+Output: Warnings occurred:
+
+Warning: /usr/lib/sqoop/../accumulo does not exist! Accumulo imports will fail.
+Please set $ACCUMULO_HOME to the root of your Accumulo installation.
+18/08/09 04:21:08 INFO sqoop.Sqoop: Running Sqoop version: 1.4.6-cdh5.13.0
+18/08/09 04:21:08 WARN tool.BaseSqoopTool: Setting your password on the command-line is insecure. Consider using -P instead.
+18/08/09 04:21:08 INFO manager.MySQLManager: Preparing to use a MySQL streaming resultset.
+18/08/09 04:21:08 INFO tool.CodeGenTool: Beginning code generation
+18/08/09 04:21:09 INFO manager.SqlManager: Executing SQL statement: SELECT t.* FROM `order_items_nopk` AS t LIMIT 1
+18/08/09 04:21:09 INFO manager.SqlManager: Executing SQL statement: SELECT t.* FROM `order_items_nopk` AS t LIMIT 1
+18/08/09 04:21:09 INFO orm.CompilationManager: HADOOP_MAPRED_HOME is /usr/lib/hadoop-mapreduce
+Note: /tmp/sqoop-cloudera/compile/8e548e4d6d35d6f07de27a48ff8054a1/order_items_nopk.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+18/08/09 04:21:13 INFO orm.CompilationManager: Writing jar file: /tmp/sqoop-cloudera/compile/8e548e4d6d35d6f07de27a48ff8054a1/order_items_nopk.jar
+18/08/09 04:21:13 WARN manager.MySQLManager: It looks like you are importing from mysql.
+18/08/09 04:21:13 WARN manager.MySQLManager: This transfer can be faster! Use the --direct
+18/08/09 04:21:13 WARN manager.MySQLManager: option to exercise a MySQL-specific fast path.
+18/08/09 04:21:13 INFO manager.MySQLManager: Setting zero DATETIME behavior to convertToNull (mysql)
+18/08/09 04:21:13 ERROR tool.ImportTool: Import failed: No primary key could be found for table order_items_nopk. Please specify one with --split-by or perform a sequential import with '-m 1'.
+
+
+**********************************************************************************************************************
+
+// Things to remember for --split-by
+// Column should be indexed.
+// select * from order_items_nopk where order_item_id >= 1 and order_items < 43049
+//column values should be evenly distributed.
+// Column should not have null values
+Command:
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table order_items_nopk --warehouse-dir /usr/cloudera/sqoop_import/retail_db --split-by order_item_order_id
+
+
+Output:
+
+[cloudera@quickstart sqoop]$ hadoop fs -ls /usr/cloudera/sqoop_import/retail_db/order_items_nopk
+Found 5 items
+-rw-r--r--   1 cloudera supergroup          0 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/_SUCCESS
+-rw-r--r--   1 cloudera supergroup    1304595 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00000
+-rw-r--r--   1 cloudera supergroup    1340464 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00001
+-rw-r--r--   1 cloudera supergroup    1372029 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00002
+-rw-r--r--   1 cloudera supergroup    1391792 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00003
+
+
+*************************************************************************************************************************
+//Split by using string on Orders table.
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table orders --warehouse-dir /usr/cloudera/sqoop_import/retail_db --split-by order_status
+
+
+[cloudera@quickstart sqoop]$ hadoop fs -ls /usr/cloudera/sqoop_import/retail_db/orders
+Found 6 items
+-rw-r--r--   1 cloudera supergroup          0 2018-08-09 06:47 /usr/cloudera/sqoop_import/retail_db/orders/_SUCCESS
+-rw-r--r--   1 cloudera supergroup    1322282 2018-08-09 06:47 /usr/cloudera/sqoop_import/retail_db/orders/part-m-00000
+-rw-r--r--   1 cloudera supergroup          0 2018-08-09 06:47 /usr/cloudera/sqoop_import/retail_db/orders/part-m-00001
+-rw-r--r--   1 cloudera supergroup     155533 2018-08-09 06:47 /usr/cloudera/sqoop_import/retail_db/orders/part-m-00002
+-rw-r--r--   1 cloudera supergroup    1445851 2018-08-09 06:47 /usr/cloudera/sqoop_import/retail_db/orders/part-m-00003
+-rw-r--r--   1 cloudera supergroup      76278 2018-08-09 06:47 /usr/cloudera/sqoop_import/retail_db/orders/part-m-00004
+
+*************************************************************************************************************************
+
+// If there is no index on column, either --split-by clause or -m 1 should be used.
+// otherwise use --auto-rest-to-one-mapper option shuldbe specified.
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table order_items_nopk --warehouse-dir /usr/cloudera/sqoop_import/retail_db --append --autoreset-to-one-mapper
+
+// created the last file with above command.
+
+[cloudera@quickstart sqoop]$ hadoop fs -ls /usr/cloudera/sqoop_import/retail_db/order_items_nopkFound 6 items
+-rw-r--r--   1 cloudera supergroup          0 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/_SUCCESS
+-rw-r--r--   1 cloudera supergroup    1304595 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00000
+-rw-r--r--   1 cloudera supergroup    1340464 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00001
+-rw-r--r--   1 cloudera supergroup    1372029 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00002
+-rw-r--r--   1 cloudera supergroup    1391792 2018-08-09 06:21 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00003
+-rw-r--r--   1 cloudera cloudera      5408880 2018-08-09 07:05 /usr/cloudera/sqoop_import/retail_db/order_items_nopk/part-m-00004
+
+******************************************************************************************************************************************************
+//FILE FORMATS
+// Test file - Default
+// AVRO FILE Format - Binary JASON File - Jason - Java Script Object Notation file format.
+// Sequnce file format - Normal Binary File format
+// Parquet File  Format - Columnar File Format - Binary - popular with MPP (Massive parallel processing) databases like Greenplum, vertica.
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table categories --warehouse-dir /usr/cloudera/sqoop_import/retail_db --as-sequencefile
+
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table categories --warehouse-dir /usr/cloudera/sqoop_import/retail_db --append --as-avrodatafile
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table categories --warehouse-dir /usr/cloudera/sqoop_import/retail_db --append --as-parquetfile
+
+[cloudera@quickstart sqoop]$ hadoop fs -ls /usr/cloudera/sqoop_import/retail_db/categories
+Found 15 items
+drwxr-xr-x   - cloudera cloudera            0 2018-08-09 08:20 /usr/cloudera/sqoop_import/retail_db/categories/.metadata-00000
+drwxr-xr-x   - cloudera cloudera            0 2018-08-09 08:20 /usr/cloudera/sqoop_import/retail_db/categories/.signals-00000
+-rw-r--r--   1 cloudera cloudera         1313 2018-08-09 08:20 /usr/cloudera/sqoop_import/retail_db/categories/0e8a4d9a-2f46-4d82-8d2e-2926383f838e.parquet
+-rw-r--r--   1 cloudera cloudera         1265 2018-08-09 08:20 /usr/cloudera/sqoop_import/retail_db/categories/798fcf17-73df-42b7-83d8-c233e319360a.parquet
+-rw-r--r--   1 cloudera supergroup          0 2018-08-09 08:16 /usr/cloudera/sqoop_import/retail_db/categories/_SUCCESS
+-rw-r--r--   1 cloudera cloudera         1242 2018-08-09 08:20 /usr/cloudera/sqoop_import/retail_db/categories/c486f296-941f-48e9-afa4-e2a118a48f39.parquet
+-rw-r--r--   1 cloudera cloudera         1267 2018-08-09 08:20 /usr/cloudera/sqoop_import/retail_db/categories/cf104112-bb17-4a58-b183-126a2ad3e397.parquet
+-rw-r--r--   1 cloudera supergroup        681 2018-08-09 08:16 /usr/cloudera/sqoop_import/retail_db/categories/part-m-00000
+-rw-r--r--   1 cloudera supergroup        642 2018-08-09 08:16 /usr/cloudera/sqoop_import/retail_db/categories/part-m-00001
+-rw-r--r--   1 cloudera supergroup        645 2018-08-09 08:16 /usr/cloudera/sqoop_import/retail_db/categories/part-m-00002
+-rw-r--r--   1 cloudera supergroup        630 2018-08-09 08:16 /usr/cloudera/sqoop_import/retail_db/categories/part-m-00003
+-rw-r--r--   1 cloudera cloudera          776 2018-08-09 08:19 /usr/cloudera/sqoop_import/retail_db/categories/part-m-00004.avro
+-rw-r--r--   1 cloudera cloudera          759 2018-08-09 08:19 /usr/cloudera/sqoop_import/retail_db/categories/part-m-00005.avro
+-rw-r--r--   1 cloudera cloudera          762 2018-08-09 08:19 /usr/cloudera/sqoop_import/retail_db/categories/part-m-00006.avro
+-rw-r--r--   1 cloudera cloudera          725 2018-08-09 08:19 /usr/cloudera/sqoop_import/retail_db/categories/part-m-00007.avro
+
+******************************************************************************************************************************************************
